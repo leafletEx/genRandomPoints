@@ -15,7 +15,7 @@ const initGaoDeTileLayer = () => {
           p: param,
           subdomains: "1234",
           minZoom: 0,
-          maxZoom: 23,
+          maxZoom: 20,
           minNativeZoom: 1,
           maxNativeZoom: 18,
         },
@@ -25,18 +25,14 @@ const initGaoDeTileLayer = () => {
     },
     _setZoomTransform: function (level, center, zoom) {
       center = L.latLng(
-        gcoord
-          .transform([center.lng, center.lat], gcoord.WGS84, gcoord.GCJ02)
-          .reverse(),
-      ); // 采用 gcoord 库进行纠偏
+        gcoord.transform([center.lat, center.lng], gcoord.WGS84, gcoord.GCJ02),
+      );
       L.TileLayer.prototype._setZoomTransform.call(this, level, center, zoom);
     },
     _getTiledPixelBounds: function (center) {
       center = L.latLng(
-        gcoord
-          .transform([center.lng, center.lat], gcoord.WGS84, gcoord.GCJ02)
-          .reverse(),
-      ); // 采用 gcoord 库进行纠偏
+        gcoord.transform([center.lat, center.lng], gcoord.WGS84, gcoord.GCJ02),
+      );
       return L.TileLayer.prototype._getTiledPixelBounds.call(this, center);
     },
   });
@@ -68,8 +64,9 @@ const getGaoDeLayerByType = (type) => {
 
 let mapObj = reactive({});
 const initMap = () => {
+  // leaflet 默认投影是 L.CRS.EPSG3857	与高德相同，所以无需设置
   const map = L.map("map", {
-    center: [39.87, 116.38],
+    center: [39.865246, 116.378517],
     zoom: 15,
     zoomControl: false,
     attributionControl: false,
@@ -77,6 +74,10 @@ const initMap = () => {
   });
 
   map.addLayer(getGaoDeLayerByType("c7000_Layer"));
+
+  map.on("click", (e) => {
+    console.log(e, "====");
+  });
 
   Object.assign(mapObj, map);
 };
