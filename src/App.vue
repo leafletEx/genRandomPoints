@@ -1,7 +1,8 @@
 <script setup>
 import L from "leaflet";
 import gcoord from "gcoord";
-import { reactive, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
+import { useAddMarker } from "./components/useAddMarker.js";
 
 // 初始化高德地图底图
 const initGaoDeTileLayer = () => {
@@ -88,6 +89,11 @@ const initMap = () => {
 onMounted(() => {
   initMap();
 });
+
+const { generatePoints } = useAddMarker(mapObj);
+
+const generatePointTotal = ref(1000);
+const generatePointArea = ref("河南省");
 </script>
 
 <template>
@@ -97,6 +103,22 @@ onMounted(() => {
     <div class="operate">
       <p @click="setMapLayer('01')">影像地图</p>
       <p @click="setMapLayer('02')">电子地图</p>
+
+      <el-input
+        style="width: 100px"
+        v-model="generatePointArea"
+        placeholder="请输入生成 marker 区域"
+      ></el-input>
+
+      <el-input
+        style="width: 100px"
+        v-model="generatePointTotal"
+        placeholder="请输入生成 marker 数量"
+      ></el-input>
+
+      <p @click="generatePoints(generatePointArea, generatePointTotal)">
+        生成点位
+      </p>
     </div>
   </div>
 </template>
@@ -118,12 +140,13 @@ onMounted(() => {
     top: 10px;
     left: 10px;
     display: flex;
+    width: 100%;
 
     p {
       color: #ffffff;
       border-radius: 4px;
       padding: 4px 6px;
-      margin-left: 10px;
+      margin: 0 10px;
       background: cadetblue;
       cursor: pointer;
 
