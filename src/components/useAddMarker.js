@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import L from "leaflet";
+import "leaflet.markercluster";
 
 export const useAddMarker = (mapObj) => {
   const pointArr = ref([]);
@@ -9,6 +10,25 @@ export const useAddMarker = (mapObj) => {
   // const initMarkerTileLayer = () => {
   //   markerTileLayer.value = new L.tileLayer();
   // };
+
+  const markersLayerGroup = ref();
+  const pointAggregation = () => {
+    // 图曾存在先清除
+    if (markersLayerGroup.value) {
+      mapObj.value.removeLayer(markersLayerGroup.value);
+    }
+
+    // 创建图层组
+    markersLayerGroup.value = L.markerClusterGroup();
+
+    // 向图层添加数据
+    pointArr.value.map((item) => {
+      markersLayerGroup.value.addLayer(L.marker(item));
+    });
+
+    // 将图层组加载到地图
+    mapObj.value.addLayer(markersLayerGroup.value);
+  };
 
   const addMarker = (point) => {
     const marker = L.marker(point).addTo(mapObj.value);
@@ -88,11 +108,14 @@ export const useAddMarker = (mapObj) => {
 
             pointArr.value.push(point);
 
-            addMarker(point);
+            // addMarker(point);
           }
         }
       }
       console.log(pointArr.value);
+      console.log(pointArr.value.length);
+
+      pointAggregation();
     });
   };
 
