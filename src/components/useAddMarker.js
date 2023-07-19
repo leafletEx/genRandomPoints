@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import L from "leaflet";
 import "leaflet.markercluster";
+import viteIcon from "/public/vite.svg";
 
 export const useAddMarker = (mapObj) => {
   const pointArr = ref([]);
@@ -10,6 +11,18 @@ export const useAddMarker = (mapObj) => {
   // const initMarkerTileLayer = () => {
   //   markerTileLayer.value = new L.tileLayer();
   // };
+
+  // 获取 marker icon
+  const getMarkerIcon = () => {
+    return L.icon({
+      iconUrl: viteIcon,
+      iconSize: [38, 95],
+      iconAnchor: [22, 94],
+      popupAnchor: [-3, -76],
+      shadowSize: [68, 95],
+      shadowAnchor: [22, 94],
+    });
+  };
 
   const markersLayerGroup = ref();
   const pointAggregation = () => {
@@ -23,7 +36,9 @@ export const useAddMarker = (mapObj) => {
 
     // 向图层添加数据
     pointArr.value.map((item) => {
-      markersLayerGroup.value.addLayer(L.marker(item));
+      markersLayerGroup.value.addLayer(
+        L.marker(item, { icon: getMarkerIcon() }),
+      );
     });
 
     // 将图层组加载到地图
