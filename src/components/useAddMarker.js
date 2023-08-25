@@ -1,140 +1,148 @@
-import { ref } from "vue";
+import {ref} from "vue";
 import L from "leaflet";
 import "leaflet.markercluster";
-import viteIcon from "/public/vite.svg";
+import {
+    point as turfPoint,
+    multiPolygon as turfMultiPolygon,
+    booleanPointInPolygon
+} from '@turf/turf'
+import point_icon from "../assets/point_icon.png";
 
 export const useAddMarker = (mapObj) => {
-  const pointArr = ref([]);
-  const markerList = ref([]);
+    const pointArr = ref([]);
+    const markerList = ref([]);
 
-  // const markerTileLayer = ref();
-  // const initMarkerTileLayer = () => {
-  //   markerTileLayer.value = new L.tileLayer();
-  // };
+    // 获取 marker icon
+    const getMarkerIcon = () => {
+        return L.icon({
+            iconUrl: point_icon,
+            iconSize: [40, 40],
+        });
+    };
 
-  // 获取 marker icon
-  const getMarkerIcon = () => {
-    return L.icon({
-      iconUrl: viteIcon,
-      iconSize: [38, 95],
-      iconAnchor: [22, 94],
-      popupAnchor: [-3, -76],
-      shadowSize: [68, 95],
-      shadowAnchor: [22, 94],
-    });
-  };
+    const markersLayerGroup = ref();
+    const pointAggregation = () => {
+        // 图曾存在先清除
+        if (markersLayerGroup.value) {
+            mapObj.value.removeLayer(markersLayerGroup.value);
+        }
 
-  const markersLayerGroup = ref();
-  const pointAggregation = () => {
-    // 图曾存在先清除
-    if (markersLayerGroup.value) {
-      mapObj.value.removeLayer(markersLayerGroup.value);
+        // 创建图层组
+        markersLayerGroup.value = L.markerClusterGroup({
+            chunkedLoading: true,
+            showCoverageOnHover: false,
+        });
+
+        // 向图层添加数据
+        pointArr.value.map((item) => {
+            markersLayerGroup.value.addLayer(
+                L.marker(item.reverse(), {icon: getMarkerIcon()}),
+            );
+        });
+
+        // 将图层组加载到地图
+        mapObj.value.addLayer(markersLayerGroup.value);
+    };
+
+    const clearAllMarker = () => {
+        markerList.value.map((item) => {
+            item.remove();
+            return item;
+        });
+        markerList.value = [];
+    };
+
+    // 区域边界
+    const boundaryLayer = ref()
+
+    const clearBoundaryLayer = () => {
+        if (boundaryLayer.value) {
+            mapObj.value.removeLayer(boundaryLayer.value)
+
+            boundaryLayer.value = null
+        }
     }
 
-    // 创建图层组
-    markersLayerGroup.value = L.markerClusterGroup();
+    // 添加区域边界
+    const addBoundaryLayer = (data) => {
+        clearBoundaryLayer()
 
-    // 向图层添加数据
-    pointArr.value.map((item) => {
-      markersLayerGroup.value.addLayer(
-        L.marker(item, { icon: getMarkerIcon() }),
-      );
-    });
+        boundaryLayer.value = L.geoJSON(data, {
+            style: function (feature) {
+                return {color: 'rgba(84,125,246, 0.4)'};
+            }
+        }).addTo(mapObj.value)
 
-    // 将图层组加载到地图
-    mapObj.value.addLayer(markersLayerGroup.value);
-  };
+    }
 
-  const addMarker = (point) => {
-    const marker = L.marker(point).addTo(mapObj.value);
-    markerList.value.push(marker);
-  };
+    const areaLevelMap = {
+        "province": 8,
+        "city": 10,
+        "district": 12,
+    }
 
-  const clearAllMarker = () => {
-    markerList.value.map((item) => {
-      item.remove();
-      return item;
-    });
-    markerList.value = [];
-  };
+    // 将地图移动到区域中心点
+    const mapMoveToAreaCenter = (areaInfo) => {
+        const center = areaInfo.center
+        mapObj.value.flyTo([center[1], center[0]], areaLevelMap[areaInfo.level]);
+    }
 
-  // 生成坐标点
-  const generatePoints = (areaName, num) => {
-    pointArr.value = [];
-    clearAllMarker();
+    // 生成随机点
+    const generateRandomPointInBoundingBox = (bbox) => {
+        const [minX, minY, maxX, maxY] = bbox;
+        const randomX = Math.random() * (maxX - minX) + minX;
+        const randomY = Math.random() * (maxY - minY) + minY;
+        return [randomX, randomY];
+    }
 
-    const bdary = new BMap.Boundary();
-    //要显示的行政区域 可以是为 市 县 区
-    bdary.get(areaName, function (rs) {
-      //获取行政区域
-      const count = rs.boundaries.length; // 行政区域的点有多少个
+    // 判断点是否在 geoJson 内
+    const isPointInsideFeatureCollection = (featureCollection, pointCoordinates) => {
 
-      if (count === 0) {
-        alert("未能获取当前输入行政区域");
-        return;
-      }
-      let lat_max = 0;
-      let lat_min = 360;
-      let lng_max = 0;
-      let lng_min = 360;
+        // 将点坐标转换为 Turf.js 对象
+        const point = turfPoint(pointCoordinates);
 
-      rs.boundaries.forEach((v) => {
-        v.split(";").forEach((vv) => {
-          let n = vv.split(",");
-          lng_max = n[0] > lng_max ? n[0] : lng_max;
-          lng_min = n[0] < lng_min ? n[0] : lng_min;
+        // 遍历 FeatureCollection 中的每个 Feature
+        for (const feature of featureCollection.features) {
+            const multiPolygon = turfMultiPolygon(feature.geometry.coordinates);
+            const isPointInsidePolygon = booleanPointInPolygon(point, multiPolygon);
 
-          lat_max = n[1] > lat_max ? n[1] : lat_max;
-          lat_min = n[1] < lat_min ? n[1] : lat_min;
-        });
-      });
-
-      const lat_range = lat_max - lat_min;
-      const lng_range = lng_max - lng_min;
-
-      // console.log(lat_max, lat_min, lat_range);
-      // console.log(lng_max, lng_min, lng_range);
-
-      // 移动到中心点
-      mapObj.value.flyTo([lat_max - 2, lng_max - 2], 10);
-
-      let pointArray = [];
-      for (let i = 0; i < count; i++) {
-        const ply = new BMap.Polygon(rs.boundaries[i]); //建立多边形覆盖物
-        // map.addOverlay(ply); //添加覆盖物
-        // console.log(ply, "====");
-
-        pointArray = pointArray.concat(ply.getPath());
-        // map.setViewport(pointArray);
-
-        let x = 0;
-        let y = 0;
-        let pt = null;
-        for (let i = 0; i < num; i++) {
-          x = (lng_min * 100) / 100 + Math.random() * lng_range;
-          y = (lat_min * 100) / 100 + Math.random() * lat_range;
-
-          pt = new BMap.Point(x, y);
-          if (BMapLib.GeoUtils.isPointInPolygon(pt, ply)) {
-            const point = {
-              lat: y,
-              lng: x,
-            };
-
-            pointArr.value.push(point);
-
-            // addMarker(point);
-          }
+            if (isPointInsidePolygon) {
+                return true; // 如果点在任何一个 Feature 内，返回 true
+            }
         }
-      }
-      console.log(pointArr.value);
-      console.log(pointArr.value.length);
 
-      pointAggregation();
-    });
-  };
+        return false; // 如果点不在任何一个 Feature 内，返回 false
+    }
 
-  return {
-    generatePoints,
-  };
+    // 生成坐标点
+    const generatePoints = async (areaInfo, num) => {
+        const url = `https://geo.datav.aliyun.com/areas_v3/bound/geojson?code=${areaInfo.adcode}_full`
+
+        const areaData = await fetch(url).then(res => res.json())
+
+        addBoundaryLayer(areaData)
+
+        mapMoveToAreaCenter(areaInfo)
+
+        pointArr.value = [];
+        clearAllMarker();
+
+        for (let i = 0; i < num; i++) {
+            const point = generateRandomPointInBoundingBox(areaInfo.bbox);
+
+
+            const isInside = isPointInsideFeatureCollection(areaData, point);
+
+            if (isInside) {
+                pointArr.value.push(point)
+            }
+        }
+
+        console.log('生成点位数据', pointArr.value)
+        pointAggregation();
+    };
+
+    return {
+        generatePoints,
+    };
 };
