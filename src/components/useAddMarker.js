@@ -7,7 +7,7 @@ import {
     booleanPointInPolygon
 } from '@turf/turf'
 import point_icon from "../assets/point_icon.png";
-import {ElMessage} from "element-plus";
+import {ElMessage, ElLoading} from "element-plus";
 
 export const useAddMarker = (mapObj) => {
     const pointArr = ref([]);
@@ -117,11 +117,23 @@ export const useAddMarker = (mapObj) => {
         return false; // 如果点不在任何一个 Feature 内，返回 false
     }
 
+    // 获取区域边界
+    const getAreaData = async (code) => {
+        const loading = ElLoading.service()
+
+        // todo 这里使用 接口代理一层因为 https://geo.datav.aliyun.com 屏蔽了一些网站如 github、netlify
+        // const url = `https://geo.datav.aliyun.com/areas_v3/bound/geojson?code=${areaInfo.adcode}`
+        const areaData = await fetch(`https://36dvjmmx39.us.aircode.run/index?areaCode=${code}`).then(res => res.json())
+
+        loading.close()
+
+        return areaData
+    }
+
+
     // 生成坐标点
     const generatePoints = async (areaInfo, num) => {
-        const url = `https://geo.datav.aliyun.com/areas_v3/bound/geojson?code=${areaInfo.adcode}`
-
-        const areaData = await fetch(url).then(res => res.json())
+        const areaData = await getAreaData(areaInfo.adcode)
 
         addBoundaryLayer(areaData)
 
