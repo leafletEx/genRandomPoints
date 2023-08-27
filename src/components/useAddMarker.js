@@ -7,6 +7,7 @@ import {
     booleanPointInPolygon
 } from '@turf/turf'
 import point_icon from "../assets/point_icon.png";
+import {ElMessage} from "element-plus";
 
 export const useAddMarker = (mapObj) => {
     const pointArr = ref([]);
@@ -141,6 +142,7 @@ export const useAddMarker = (mapObj) => {
         }
 
         console.log('生成点位数据', pointArr.value)
+        ElMessage.success('生成成功，请打开控制台获取！')
         addMarkerToMap();
     };
 
