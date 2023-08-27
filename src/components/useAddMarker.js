@@ -12,6 +12,14 @@ export const useAddMarker = (mapObj) => {
     const pointArr = ref([]);
     const markerList = ref([]);
 
+    const clearAllMarker = () => {
+        markerList.value.map((item) => {
+            item.remove();
+            return item;
+        });
+        markerList.value = [];
+    };
+
     // 获取 marker icon
     const getMarkerIcon = () => {
         return L.icon({
@@ -21,7 +29,9 @@ export const useAddMarker = (mapObj) => {
     };
 
     const markersLayerGroup = ref();
-    const pointAggregation = () => {
+    const addMarkerToMap = () => {
+        clearAllMarker()
+
         // 图曾存在先清除
         if (markersLayerGroup.value) {
             mapObj.value.removeLayer(markersLayerGroup.value);
@@ -42,14 +52,6 @@ export const useAddMarker = (mapObj) => {
 
         // 将图层组加载到地图
         mapObj.value.addLayer(markersLayerGroup.value);
-    };
-
-    const clearAllMarker = () => {
-        markerList.value.map((item) => {
-            item.remove();
-            return item;
-        });
-        markerList.value = [];
     };
 
     // 区域边界
@@ -139,7 +141,7 @@ export const useAddMarker = (mapObj) => {
         }
 
         console.log('生成点位数据', pointArr.value)
-        pointAggregation();
+        addMarkerToMap();
     };
 
     return {
