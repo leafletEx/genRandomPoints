@@ -119,7 +119,7 @@ export const useAddMarker = (mapObj) => {
 
     // 生成坐标点
     const generatePoints = async (areaInfo, num) => {
-        const url = `https://geo.datav.aliyun.com/areas_v3/bound/geojson?code=${areaInfo.adcode}_full`
+        const url = `https://geo.datav.aliyun.com/areas_v3/bound/${areaInfo.adcode}.json`
 
         const areaData = await fetch(url).then(res => res.json())
 
