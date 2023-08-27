@@ -163,7 +163,7 @@ const createPoints = () => {
 
   .operate {
     position: absolute;
-    z-index: 9990;
+    z-index: 500;
     top: 10px;
     left: 10px;
     display: flex;
@@ -182,5 +182,10 @@ const createPoints = () => {
       }
     }
   }
+}
+</style>
+<style>
+.el-message {
+    z-index: 99999000;
 }
 </style>
