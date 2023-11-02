@@ -1,153 +1,105 @@
 <script setup>
-import L from "leaflet";
-import gcoord from "gcoord";
-import {onMounted, reactive, ref} from "vue";
-import {useAddMarker} from "./components/useAddMarker.js";
+import {reactive, ref, defineAsyncComponent} from "vue";
+import {useGenerateRandomPointsToMap} from "./components/useGenerateRandomPointsToMap.js";
 import {areaList} from '../public/area.js'
 import {ElMessage} from 'element-plus'
 
-// 初始化高德地图底图
-const initGaoDeTileLayer = () => {
-    L.TileLayer.GaoDeTileLayer = L.TileLayer.extend({
-        initialize: function (param, options) {
-            const templateUrl =
-                "//wprd0{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&{p}";
-            // var templateUrl = "//webst{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&{p}"
-            options = L.extend(
-                {
-                    p: param,
-                    subdomains: "1234",
-                    minZoom: 0,
-                    maxZoom: 20,
-                    minNativeZoom: 1,
-                    maxNativeZoom: 18,
-                },
-                options,
-            );
-            L.TileLayer.prototype.initialize.call(this, templateUrl, options);
-        },
-        _setZoomTransform: function (level, center, zoom) {
-            center = L.latLng(
-                gcoord.transform([center.lat, center.lng], gcoord.WGS84, gcoord.GCJ02),
-            );
-            L.TileLayer.prototype._setZoomTransform.call(this, level, center, zoom);
-        },
-        _getTiledPixelBounds: function (center) {
-            center = L.latLng(
-                gcoord.transform([center.lat, center.lng], gcoord.WGS84, gcoord.GCJ02),
-            );
-            return L.TileLayer.prototype._getTiledPixelBounds.call(this, center);
-        },
-    });
-};
-
-initGaoDeTileLayer();
-
-// 根据类型获取高德底图
-const getGaoDeLayerByType = (type) => {
-    const layerObj = {
-        "01": {opts: "lang=zh_cn&style=6&ltype=0&scl=0&size=0", info: "影像底图"},
-        "02": {
-            opts: "lang=zh_cn&style=7&ltype=0&scl=0&size=0",
-            info: "电子地图底图",
-        },
-    };
-
-    return new L.TileLayer.GaoDeTileLayer(layerObj[type].opts, {});
-};
+const InitMap = defineAsyncComponent(() => import('./components/InitMap.vue'))
+const ViewGeneratePointsDrawer = defineAsyncComponent(() => import('./components/ViewGeneratePointsDrawer.vue'))
 
 let mapObj = ref();
+const curMapLayerType = ref('02')
+const mapLoad = (map) => {
+  mapObj.value = map
+  mapRef.value.setMapLayer(curMapLayerType.value)
+}
 
-const curMapLayer = ref();
+const mapRef = ref();
 const setMapLayer = (type) => {
-    if (curMapLayer.value) {
-        curMapLayer.value.remove(mapObj.value);
-        curMapLayer.value = null;
-    }
+  mapRef.value.setMapLayer(type)
+}
 
-    curMapLayer.value = getGaoDeLayerByType(type);
-    curMapLayer.value.addTo(mapObj.value);
-};
-
-const initMap = () => {
-    // leaflet 默认投影是 L.CRS.EPSG3857	与高德相同，所以无需设置
-    const map = L.map("map", {
-        center: [39.865246, 116.378517],
-        zoom: 15,
-        zoomControl: false,
-        attributionControl: false,
-        doubleClickZoom: false,
-    });
-
-    mapObj.value = map;
-
-    setMapLayer("02");
-};
-
-onMounted(() => {
-    initMap();
-});
-
-const {generatePoints} = useAddMarker(mapObj);
+const {generatePoints, pointArr} = useGenerateRandomPointsToMap(mapObj);
 
 const generatePointTotal = ref(1000);
 const areaCode = ref('')
 
 const areaInfo = reactive({
-    adcode: '',
-    center: [],
-    bbox: [],
-    level: ''
+  adcode: '',
+  center: [],
+  bbox: [],
+  level: ''
 })
 
 const areaTreeRef = ref()
 const selChange = () => {
-    if (areaCode) {
-        const data = areaTreeRef.value.getCurrentNode()
-        Object.assign(areaInfo, data)
-    }
+  if (areaCode) {
+    const data = areaTreeRef.value.getCurrentNode()
+    Object.assign(areaInfo, data)
+  }
 }
 
 const createPoints = () => {
-    if (!areaCode.value) {
-        ElMessage.warning('请选择区域')
-        return
-    }
+  if (!areaCode.value) {
+    ElMessage.warning('请选择区域')
+    return
+  }
 
-    generatePoints(areaInfo, generatePointTotal.value)
+  generatePoints(areaInfo, generatePointTotal.value)
+}
+
+const viewGeneratePointsDrawerRef = ref()
+// 查看生成的点位
+const viewGeneratePoints = () => {
+  viewGeneratePointsDrawerRef.value.openDrawer(JSON.stringify(pointArr.value))
 }
 </script>
 
 <template>
-    <div class="map-box">
-        <div class="map" id="map"></div>
+  <div class="map-box">
+    <init-map ref="mapRef" @map-load="mapLoad"></init-map>
 
-        <div class="operate">
-            <p @click="setMapLayer('01')">影像地图</p>
-            <p @click="setMapLayer('02')">电子地图</p>
+    <el-card class="operate">
+      <div class="operate-body">
+        <el-radio-group v-model="curMapLayerType" @change="setMapLayer">
+          <el-radio-button label="01">影像地图</el-radio-button>
+          <el-radio-button label="02">电子地图</el-radio-button>
+        </el-radio-group>
 
-            <el-tree-select
-                    v-model="areaCode"
-                    ref="areaTreeRef"
-                    :data="areaList"
-                    placeholder="请选择区域"
-                    node-key="adcode"
-                    :props="{label: 'name'}"
-                    check-strictly
-                    @change="selChange">
-            </el-tree-select>
+        <el-divider></el-divider>
 
-            <el-input-number
-                    style="width: 200px"
-                    v-model="generatePointTotal"
-                    placeholder="请输入生成 marker 数量"
-            ></el-input-number>
+        <el-tree-select
+            v-model="areaCode"
+            ref="areaTreeRef"
+            class="mb-10"
+            :data="areaList"
+            placeholder="请选择区域"
+            node-key="adcode"
+            :props="{label: 'name'}"
+            check-strictly
+            @change="selChange">
+        </el-tree-select>
 
-            <p @click="createPoints">
-                生成点位
-            </p>
-        </div>
-    </div>
+        <el-input-number
+            style="width: 200px"
+            class="mb-10"
+            v-model="generatePointTotal"
+            placeholder="请输入生成 marker 数量"
+        ></el-input-number>
+
+        <el-button-group>
+          <el-button type="primary" @click="createPoints">
+            生成随机点
+          </el-button>
+          <el-button type="primary" @click="viewGeneratePoints">
+            查看数据
+          </el-button>
+        </el-button-group>
+      </div>
+    </el-card>
+
+    <view-generate-points-drawer ref="viewGeneratePointsDrawerRef"></view-generate-points-drawer>
+  </div>
 </template>
 
 <style lang="scss" scoped>
@@ -156,33 +108,25 @@ const createPoints = () => {
   width: 100vw;
   height: 100vh;
 
-  .map {
-    width: 100vw;
-    height: 100vh;
+  .mb-10 {
+    margin-bottom: 10px;
   }
 
   .operate {
     position: absolute;
     z-index: 500;
-    top: 10px;
-    left: 10px;
-    display: flex;
-    width: 100%;
+    top: 0;
+    right: 0;
 
-    p {
-      color: #ffffff;
-      border-radius: 4px;
-      padding: 4px 6px;
-      margin: 0 10px;
-      background: cadetblue;
-      cursor: pointer;
 
-      &:hover {
-        opacity: 0.7;
-      }
+    .operate-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
   }
 }
+
 </style>
 <style>
 .el-message {
