@@ -43,7 +43,7 @@ const selChange = () => {
 
 const createPoints = () => {
   if (!areaCode.value) {
-    ElMessage.warning("请选择区域");
+    ElMessage.warning("请先选择生成随机点的区域");
     return;
   }
 
@@ -53,6 +53,11 @@ const createPoints = () => {
 const viewGeneratePointsDrawerRef = ref();
 // 查看生成的点位
 const viewGeneratePoints = () => {
+  if (pointArr.value.length === 0) {
+    ElMessage.warning("请先点击“生成随机点”按钮生成数据！");
+    return;
+  }
+
   viewGeneratePointsDrawerRef.value.openDrawer(JSON.stringify(pointArr.value));
 };
 </script>

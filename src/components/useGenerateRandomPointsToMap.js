@@ -144,7 +144,8 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
     pointArr.value = [];
     clearAllMarker();
 
-    for (let i = 0; i < num; i++) {
+    // 生成指定数量的随机点
+    while (pointArr.value.length < num) {
       const point = generateRandomPointInBoundingBox(areaInfo.bbox);
 
       const isInside = isPointInsideFeatureCollection(areaData, point);
