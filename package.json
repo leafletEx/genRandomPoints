@@ -1,5 +1,5 @@
 {
-  "name": "leaflet-gaode",
+  "name": "generate-random-points",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -9,7 +9,7 @@
   ],
   "author": {
     "name": "vaele",
-    "url": "https://github.com/leafletjsExample/leaflet-gaode"
+    "url": "https://github.com/leafletjsExample/generateRandomPoints"
   },
   "scripts": {
     "dev": "vite",
