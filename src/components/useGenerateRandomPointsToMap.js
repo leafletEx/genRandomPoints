@@ -1,13 +1,13 @@
-import {ref} from "vue";
+import { ref } from "vue";
 import L from "leaflet";
 import "leaflet.markercluster";
 import {
   point as turfPoint,
   multiPolygon as turfMultiPolygon,
-  booleanPointInPolygon
-} from '@turf/turf'
+  booleanPointInPolygon,
+} from "@turf/turf";
 import point_icon from "../assets/point_icon.png";
-import {ElMessage, ElLoading} from "element-plus";
+import { ElMessage, ElLoading } from "element-plus";
 
 export const useGenerateRandomPointsToMap = (mapObj) => {
   const pointArr = ref([]);
@@ -31,7 +31,7 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
 
   const markersLayerGroup = ref();
   const addMarkerToMap = () => {
-    clearAllMarker()
+    clearAllMarker();
 
     // 图曾存在先清除
     if (markersLayerGroup.value) {
@@ -47,7 +47,7 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
     // 向图层添加数据
     pointArr.value.map((item) => {
       markersLayerGroup.value.addLayer(
-        L.marker(item.reverse(), {icon: getMarkerIcon()}),
+        L.marker(item.reverse(), { icon: getMarkerIcon() }),
       );
     });
 
@@ -56,39 +56,38 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
   };
 
   // 区域边界
-  const boundaryLayer = ref()
+  const boundaryLayer = ref();
 
   const clearBoundaryLayer = () => {
     if (boundaryLayer.value) {
-      mapObj.value.removeLayer(boundaryLayer.value)
+      mapObj.value.removeLayer(boundaryLayer.value);
 
-      boundaryLayer.value = null
+      boundaryLayer.value = null;
     }
-  }
+  };
 
   // 添加区域边界
   const addBoundaryLayer = (data) => {
-    clearBoundaryLayer()
+    clearBoundaryLayer();
 
     boundaryLayer.value = L.geoJSON(data, {
       style: function (feature) {
-        return {color: 'rgba(84,125,246, 0.4)'};
-      }
-    }).addTo(mapObj.value)
-
-  }
+        return { color: "rgba(84,125,246, 0.4)" };
+      },
+    }).addTo(mapObj.value);
+  };
 
   const areaLevelMap = {
-    "province": 8,
-    "city": 10,
-    "district": 12,
-  }
+    province: 8,
+    city: 10,
+    district: 12,
+  };
 
   // 将地图移动到区域中心点
   const mapMoveToAreaCenter = (areaInfo) => {
-    const center = areaInfo.center
+    const center = areaInfo.center;
     mapObj.value.flyTo([center[1], center[0]], areaLevelMap[areaInfo.level]);
-  }
+  };
 
   // 生成随机点
   const generateRandomPointInBoundingBox = (bbox) => {
@@ -96,11 +95,13 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
     const randomX = Math.random() * (maxX - minX) + minX;
     const randomY = Math.random() * (maxY - minY) + minY;
     return [randomX, randomY];
-  }
+  };
 
   // 判断点是否在 geoJson 内
-  const isPointInsideFeatureCollection = (featureCollection, pointCoordinates) => {
-
+  const isPointInsideFeatureCollection = (
+    featureCollection,
+    pointCoordinates,
+  ) => {
     // 将点坐标转换为 Turf.js 对象
     const point = turfPoint(pointCoordinates);
 
@@ -115,29 +116,30 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
     }
 
     return false; // 如果点不在任何一个 Feature 内，返回 false
-  }
+  };
 
   // 获取区域边界
   const getAreaData = async (code) => {
-    const loading = ElLoading.service()
+    const loading = ElLoading.service();
 
     // todo 这里使用 接口代理一层因为 https://geo.datav.aliyun.com 屏蔽了一些网站如 github、netlify
     // const url = `https://geo.datav.aliyun.com/areas_v3/bound/geojson?code=${areaInfo.adcode}`
-    const areaData = await fetch(`https://36dvjmmx39.us.aircode.run/index?areaCode=${code}`).then(res => res.json())
+    const areaData = await fetch(
+      `https://36dvjmmx39.us.aircode.run/index?areaCode=${code}`,
+    ).then((res) => res.json());
 
-    loading.close()
+    loading.close();
 
-    return areaData
-  }
-
+    return areaData;
+  };
 
   // 生成坐标点
   const generatePoints = async (areaInfo, num) => {
-    const areaData = await getAreaData(areaInfo.adcode)
+    const areaData = await getAreaData(areaInfo.adcode);
 
-    addBoundaryLayer(areaData)
+    addBoundaryLayer(areaData);
 
-    mapMoveToAreaCenter(areaInfo)
+    mapMoveToAreaCenter(areaInfo);
 
     pointArr.value = [];
     clearAllMarker();
@@ -145,19 +147,17 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
     for (let i = 0; i < num; i++) {
       const point = generateRandomPointInBoundingBox(areaInfo.bbox);
 
-
       const isInside = isPointInsideFeatureCollection(areaData, point);
 
       if (isInside) {
-        pointArr.value.push(point)
+        pointArr.value.push(point);
       }
     }
 
-
     addMarkerToMap();
 
-    console.log('生成点位数据', pointArr.value)
-    ElMessage.success('生成成功')
+    console.log("生成点位数据", pointArr.value);
+    ElMessage.success("生成成功");
   };
 
   return {

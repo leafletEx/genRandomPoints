@@ -1,10 +1,9 @@
 <script setup>
 import L from "leaflet";
-import {onMounted, ref} from "vue";
+import { onMounted, ref } from "vue";
 import gcoord from "gcoord";
 
-
-const emit = defineEmits(['map-load'])
+const emit = defineEmits(["map-load"]);
 // 初始化高德地图底图
 const initGaoDeTileLayer = () => {
   L.TileLayer.GaoDeTileLayer = L.TileLayer.extend({
@@ -45,7 +44,7 @@ initGaoDeTileLayer();
 // 根据类型获取高德底图
 const getGaoDeLayerByType = (type) => {
   const layerObj = {
-    "01": {opts: "lang=zh_cn&style=6&ltype=0&scl=0&size=0", info: "影像底图"},
+    "01": { opts: "lang=zh_cn&style=6&ltype=0&scl=0&size=0", info: "影像底图" },
     "02": {
       opts: "lang=zh_cn&style=7&ltype=0&scl=0&size=0",
       info: "电子地图底图",
@@ -78,9 +77,9 @@ const initMap = () => {
     doubleClickZoom: false,
   });
 
-  mapObj.value = map
+  mapObj.value = map;
 
-  emit('map-load', map)
+  emit("map-load", map);
 };
 
 onMounted(() => {
@@ -88,8 +87,8 @@ onMounted(() => {
 });
 
 defineExpose({
-  setMapLayer
-})
+  setMapLayer,
+});
 </script>
 
 <template>
@@ -98,7 +97,7 @@ defineExpose({
 
 <style scoped>
 .map {
-    width: 100vw;
-    height: 100vh;
+  width: 100vw;
+  height: 100vh;
 }
 </style>

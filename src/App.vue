@@ -1,58 +1,60 @@
 <script setup>
-import {reactive, ref, defineAsyncComponent} from "vue";
-import {useGenerateRandomPointsToMap} from "./components/useGenerateRandomPointsToMap.js";
-import {areaList} from '../public/area.js'
-import {ElMessage} from 'element-plus'
+import { reactive, ref, defineAsyncComponent } from "vue";
+import { useGenerateRandomPointsToMap } from "./components/useGenerateRandomPointsToMap.js";
+import { areaList } from "../public/area.js";
+import { ElMessage } from "element-plus";
 
-const InitMap = defineAsyncComponent(() => import('./components/InitMap.vue'))
-const ViewGeneratePointsDrawer = defineAsyncComponent(() => import('./components/ViewGeneratePointsDrawer.vue'))
+const InitMap = defineAsyncComponent(() => import("./components/InitMap.vue"));
+const ViewGeneratePointsDrawer = defineAsyncComponent(() =>
+  import("./components/ViewGeneratePointsDrawer.vue"),
+);
 
 let mapObj = ref();
-const curMapLayerType = ref('02')
+const curMapLayerType = ref("02");
 const mapLoad = (map) => {
-  mapObj.value = map
-  mapRef.value.setMapLayer(curMapLayerType.value)
-}
+  mapObj.value = map;
+  mapRef.value.setMapLayer(curMapLayerType.value);
+};
 
 const mapRef = ref();
 const setMapLayer = (type) => {
-  mapRef.value.setMapLayer(type)
-}
+  mapRef.value.setMapLayer(type);
+};
 
-const {generatePoints, pointArr} = useGenerateRandomPointsToMap(mapObj);
+const { generatePoints, pointArr } = useGenerateRandomPointsToMap(mapObj);
 
 const generatePointTotal = ref(1000);
-const areaCode = ref('')
+const areaCode = ref("");
 
 const areaInfo = reactive({
-  adcode: '',
+  adcode: "",
   center: [],
   bbox: [],
-  level: ''
-})
+  level: "",
+});
 
-const areaTreeRef = ref()
+const areaTreeRef = ref();
 const selChange = () => {
   if (areaCode) {
-    const data = areaTreeRef.value.getCurrentNode()
-    Object.assign(areaInfo, data)
+    const data = areaTreeRef.value.getCurrentNode();
+    Object.assign(areaInfo, data);
   }
-}
+};
 
 const createPoints = () => {
   if (!areaCode.value) {
-    ElMessage.warning('请选择区域')
-    return
+    ElMessage.warning("请选择区域");
+    return;
   }
 
-  generatePoints(areaInfo, generatePointTotal.value)
-}
+  generatePoints(areaInfo, generatePointTotal.value);
+};
 
-const viewGeneratePointsDrawerRef = ref()
+const viewGeneratePointsDrawerRef = ref();
 // 查看生成的点位
 const viewGeneratePoints = () => {
-  viewGeneratePointsDrawerRef.value.openDrawer(JSON.stringify(pointArr.value))
-}
+  viewGeneratePointsDrawerRef.value.openDrawer(JSON.stringify(pointArr.value));
+};
 </script>
 
 <template>
@@ -69,22 +71,23 @@ const viewGeneratePoints = () => {
         <el-divider></el-divider>
 
         <el-tree-select
-            v-model="areaCode"
-            ref="areaTreeRef"
-            class="mb-10"
-            :data="areaList"
-            placeholder="请选择区域"
-            node-key="adcode"
-            :props="{label: 'name'}"
-            check-strictly
-            @change="selChange">
+          v-model="areaCode"
+          ref="areaTreeRef"
+          class="mb-10"
+          :data="areaList"
+          placeholder="请选择区域"
+          node-key="adcode"
+          :props="{ label: 'name' }"
+          check-strictly
+          @change="selChange"
+        >
         </el-tree-select>
 
         <el-input-number
-            style="width: 200px"
-            class="mb-10"
-            v-model="generatePointTotal"
-            placeholder="请输入生成 marker 数量"
+          style="width: 200px"
+          class="mb-10"
+          v-model="generatePointTotal"
+          placeholder="请输入生成 marker 数量"
         ></el-input-number>
 
         <el-button-group>
@@ -98,7 +101,9 @@ const viewGeneratePoints = () => {
       </div>
     </el-card>
 
-    <view-generate-points-drawer ref="viewGeneratePointsDrawerRef"></view-generate-points-drawer>
+    <view-generate-points-drawer
+      ref="viewGeneratePointsDrawerRef"
+    ></view-generate-points-drawer>
   </div>
 </template>
 
@@ -118,7 +123,6 @@ const viewGeneratePoints = () => {
     top: 0;
     right: 0;
 
-
     .operate-body {
       display: flex;
       flex-direction: column;
@@ -126,10 +130,9 @@ const viewGeneratePoints = () => {
     }
   }
 }
-
 </style>
 <style>
 .el-message {
-    z-index: 99999000;
+  z-index: 99999000;
 }
 </style>
