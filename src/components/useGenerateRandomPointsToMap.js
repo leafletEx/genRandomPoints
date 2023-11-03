@@ -11,15 +11,6 @@ import { ElMessage, ElLoading } from "element-plus";
 
 export const useGenerateRandomPointsToMap = (mapObj) => {
   const pointArr = ref([]);
-  const markerList = ref([]);
-
-  const clearAllMarker = () => {
-    markerList.value.map((item) => {
-      item.remove();
-      return item;
-    });
-    markerList.value = [];
-  };
 
   // 获取 marker icon
   const getMarkerIcon = () => {
@@ -31,8 +22,6 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
 
   const markersLayerGroup = ref();
   const addMarkerToMap = () => {
-    clearAllMarker();
-
     // 图曾存在先清除
     if (markersLayerGroup.value) {
       mapObj.value.removeLayer(markersLayerGroup.value);
@@ -107,8 +96,10 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
 
     // 遍历 FeatureCollection 中的每个 Feature
     for (const feature of featureCollection.features) {
-      const multiPolygon = turfMultiPolygon(feature.geometry.coordinates);
-      const isPointInsidePolygon = booleanPointInPolygon(point, multiPolygon);
+      const isPointInsidePolygon = booleanPointInPolygon(
+        point,
+        feature.geometry,
+      );
 
       if (isPointInsidePolygon) {
         return true; // 如果点在任何一个 Feature 内，返回 true
@@ -120,7 +111,9 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
 
   // 获取区域边界
   const getAreaData = async (code) => {
-    const loading = ElLoading.service();
+    const loading = ElLoading.service({
+      text: "正在生成中请稍后...",
+    });
 
     // todo 这里使用 接口代理一层因为 https://geo.datav.aliyun.com 屏蔽了一些网站如 github、netlify
     // const url = `https://geo.datav.aliyun.com/areas_v3/bound/geojson?code=${areaInfo.adcode}`
@@ -135,14 +128,13 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
 
   // 生成坐标点
   const generatePoints = async (areaInfo, num) => {
+    pointArr.value = [];
+
     const areaData = await getAreaData(areaInfo.adcode);
 
     addBoundaryLayer(areaData);
 
     mapMoveToAreaCenter(areaInfo);
-
-    pointArr.value = [];
-    clearAllMarker();
 
     // 生成指定数量的随机点
     while (pointArr.value.length < num) {
@@ -157,7 +149,6 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
 
     addMarkerToMap();
 
-    console.log("生成点位数据", pointArr.value);
     ElMessage.success("生成成功");
   };
 
