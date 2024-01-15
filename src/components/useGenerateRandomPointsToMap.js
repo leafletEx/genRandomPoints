@@ -1,11 +1,7 @@
 import { ref } from "vue";
 import L from "leaflet";
 import "leaflet.markercluster";
-import {
-  point as turfPoint,
-  multiPolygon as turfMultiPolygon,
-  booleanPointInPolygon,
-} from "@turf/turf";
+import { point as turfPoint, booleanPointInPolygon } from "@turf/turf";
 import point_icon from "../assets/point_icon.png";
 import { ElMessage, ElLoading } from "element-plus";
 
