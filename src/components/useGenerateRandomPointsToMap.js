@@ -4,6 +4,14 @@ import "leaflet.markercluster";
 import { point as turfPoint, booleanPointInPolygon } from "@turf/turf";
 import point_icon from "../assets/point_icon.png";
 import { ElMessage, ElLoading } from "element-plus";
+import geobuf from 'geobuf';
+import Pbf from 'pbf';
+
+const levelMap = {
+  province: 'province',
+  city: 'city',
+  district: 'county',
+}
 
 export const useGenerateRandomPointsToMap = (mapObj) => {
   const pointArr = ref([]);
@@ -90,43 +98,39 @@ export const useGenerateRandomPointsToMap = (mapObj) => {
     // 将点坐标转换为 Turf.js 对象
     const point = turfPoint(pointCoordinates);
 
-    // 遍历 FeatureCollection 中的每个 Feature
-    for (const feature of featureCollection.features) {
-      const isPointInsidePolygon = booleanPointInPolygon(
-        point,
-        feature.geometry,
-      );
+    const isPointInsidePolygon = booleanPointInPolygon(
+      point,
+      featureCollection.geometry,
+    );
 
-      if (isPointInsidePolygon) {
-        return true; // 如果点在任何一个 Feature 内，返回 true
-      }
-    }
-
-    return false; // 如果点不在任何一个 Feature 内，返回 false
+    return isPointInsidePolygon
   };
 
   // 获取区域边界
-  const getAreaData = async (code) => {
+  const getAreaData = async (info) => {
     const loading = ElLoading.service({
       text: "正在生成中请稍后...",
     });
 
-    // todo 这里使用 接口代理一层因为 https://geo.datav.aliyun.com 屏蔽了一些网站如 github、netlify
-    // const url = `https://geo.datav.aliyun.com/areas_v3/bound/geojson?code=${areaInfo.adcode}`
-    const areaData = await fetch(
-      `https://36dvjmmx39.us.aircode.run/index?areaCode=${code}`,
-    ).then((res) => res.json());
+    const level = levelMap[info.level]
+
+    const url = `https://unpkg.com/xingzhengqu@2023/data/${level}.pbf`
+    const data = await fetch(url)
+      .then((response) => response.arrayBuffer())
+      .then((data) => geobuf.decode(new Pbf(data)));
+
+    const list = data.features ?? []
 
     loading.close();
 
-    return areaData;
+    return list.find(item => item.properties.adcode === info.adcode);
   };
 
   // 生成坐标点
   const generatePoints = async (areaInfo, num) => {
     pointArr.value = [];
 
-    const areaData = await getAreaData(areaInfo.adcode);
+    const areaData = await getAreaData(areaInfo);
 
     addBoundaryLayer(areaData);
 
